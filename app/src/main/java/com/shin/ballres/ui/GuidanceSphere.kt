@@ -50,8 +50,8 @@ object Config {
     const val LON_STEP = 12f
     const val LAT_STEP = 12f
     const val HIGHLIGHT_DEGREE = 30f        // ±30° 点亮范围
-    const val BASE_DOT_RADIUS = 1.0f        // 未点亮时的点半径
-    const val LIT_SCALE = 3f                // 点亮后放大倍数
+    const val BASE_DOT_RADIUS = 0.8f        // 未点亮时的点半径
+    const val LIT_SCALE = 2f                // 点亮后放大倍数
     const val ANIM_DURATION_MS = 300L       // 点亮动画时长
 }
 
@@ -249,7 +249,7 @@ fun GuidanceSphere(
             // 画球体背景圆
             val bgRadius = Config.SPHERE_RADIUS * Config.FOCAL_LENGTH / Config.CAMERA_DISTANCE
             drawCircle(
-                color = Color(30, 30, 30, 200),
+                color = Color(100, 100, 100, 200),
                 radius = bgRadius,
                 center = Offset(cx, cy)
             )
@@ -269,7 +269,7 @@ fun GuidanceSphere(
                     // 尺寸: 1x → 4x
                     val dotRadius = baseDotR * (1f + (Config.LIT_SCALE - 1f) * eased)
                     // 颜色: 灰 → 白
-                    val gray = 0.4f
+                    val gray = 0.7f
                     val colorVal = gray + (1f - gray) * eased
                     val alpha = 0.5f + 0.5f * eased
 
@@ -281,7 +281,7 @@ fun GuidanceSphere(
                 } else {
                     // 未点亮 → 灰色小点
                     drawCircle(
-                        color = Color(0.5f, 0.5f, 0.5f, 0.5f),
+                        color = Color(0.7f, 0.7f, 0.7f, 0.5f),
                         radius = baseDotR,
                         center = Offset(vp.screenX, vp.screenY)
                     )
