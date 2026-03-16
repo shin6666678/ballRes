@@ -152,10 +152,11 @@ fun GuidanceSphere(
                 rotMatrix = remappedR.toList()
 
                 // ---- 命中检测 ----
-                // 相机前方 = device -Z in world = (-R[2], -R[5], -R[8])
-                val fwdX = -remappedR[2]
-                val fwdY = -remappedR[5]
-                val fwdZ = -remappedR[8]
+                // 近面球心方向 = device +Z in world = (R[2], R[5], R[8])
+                // 即面向相机的那半球的中心点方向
+                val fwdX = remappedR[2]
+                val fwdY = remappedR[5]
+                val fwdZ = remappedR[8]
 
                 val highlightCos = cos(
                     Math.toRadians(Config.HIGHLIGHT_DEGREE.toDouble())
