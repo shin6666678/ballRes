@@ -50,8 +50,8 @@ object Config {
     const val LON_STEP = 12f
     const val LAT_STEP = 12f
     const val HIGHLIGHT_DEGREE = 30f        // ±30° 点亮范围
-    const val BASE_DOT_RADIUS = 2.5f        // 未点亮时的点半径
-    const val LIT_SCALE = 4f                // 点亮后放大倍数
+    const val BASE_DOT_RADIUS = 1.0f        // 未点亮时的点半径
+    const val LIT_SCALE = 3f                // 点亮后放大倍数
     const val ANIM_DURATION_MS = 300L       // 点亮动画时长
 }
 

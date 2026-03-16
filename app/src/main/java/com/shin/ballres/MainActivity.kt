@@ -27,6 +27,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -90,30 +97,55 @@ fun MainScreen() {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(250.dp)
+                        .height(280.dp)
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp)
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(Color(0xFF2C2C2C).copy(alpha = 0.5f))
+                        .padding(bottom = 20.dp)
                 ) {
                     GuidanceSphere(
                         modifier = Modifier.fillMaxSize(),
                         key = sphereKey
                     )
                 }
-            }
 
-            Button(
-                onClick = {
-                    if (!hasCameraPermission) {
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
-                    } else {
-                        isCameraOpen = !isCameraOpen
-                    }
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp)
-            ) {
-                Text(if (isCameraOpen) "Close Camera" else "Open Camera")
+                //关闭相机按钮
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 32.dp, end = 32.dp)
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.8f))
+                        .clickable {
+                            isCameraOpen = false
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close Camera",
+                        tint = Color.Red,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            } else if (!isCameraOpen) {
+                Button(
+                    onClick = {
+                        if (!hasCameraPermission) {
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        } else {
+                            isCameraOpen = true
+                            sphereKey++
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp)
+                ) {
+                    Text("Open Camera")
+                }
             }
         }
     }
