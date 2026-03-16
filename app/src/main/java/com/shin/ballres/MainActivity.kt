@@ -54,6 +54,8 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview as CameraPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxHeight
 import com.shin.ballres.ui.GuidanceSphere
 import com.shin.ballres.ui.theme.BallResTheme
 
@@ -132,26 +134,31 @@ fun MainScreen() {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
+                        .fillMaxWidth(0.45f)
+                        .fillMaxHeight(0.25f)
                         .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    color = Color(0xFF1A1A1A).copy(alpha = 0.55f),
+                        .padding(bottom = 32.dp)
+                        .border(
+                            width = 0.8.dp,
+                            color = Color.White.copy(alpha = 0.25f),
+                            shape = RoundedCornerShape(32.dp)
+                        ),
+                    shape = RoundedCornerShape(32.dp),
+                    color = Color.White.copy(alpha = 0.12f),
                     tonalElevation = 0.dp
                 ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(320.dp)
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .clip(RoundedCornerShape(22.dp))
-                                .background(Color.Black.copy(alpha = 0.22f))
+                                .fillMaxSize()
+                                .padding(16.dp), // 留出一点内边距给球体
+                            contentAlignment = Alignment.Center
                         ) {
                             GuidanceSphere(
                                 modifier = Modifier.fillMaxSize(),
@@ -161,7 +168,7 @@ fun MainScreen() {
                     }
                 }
             } else if (!isCameraOpen) {
-                // 启动页（更美观的主按钮）
+                // 启动页
                 val bg = Brush.verticalGradient(
                     colors = listOf(
                         Color(0xFF0A0A0A),
@@ -178,10 +185,12 @@ fun MainScreen() {
                             .fillMaxSize()
                             .statusBarsPadding()
                             .navigationBarsPadding()
-                            .padding(horizontal = 24.dp, vertical = 18.dp),
-                        verticalArrangement = Arrangement.SpaceBetween
+                            .padding(horizontal = 24.dp, vertical = 40.dp),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Column(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
