@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.withFrameNanos
@@ -51,7 +52,7 @@ object Config {
     const val LAT_STEP = 12f
     const val HIGHLIGHT_DEGREE = 30f        // ±30° 点亮范围
     const val BASE_DOT_RADIUS = 0.8f        // 未点亮时的点半径
-    const val LIT_SCALE = 2f                // 点亮后放大倍数
+    const val LIT_SCALE = 1.35f             // 点亮后放大倍数
     const val ANIM_DURATION_MS = 300L       // 点亮动画时长
 }
 
@@ -212,6 +213,7 @@ fun GuidanceSphere(
                 val screenY: Float,
                 val viewZ: Float,   // 深度（越负越远）
                 val scale: Float,   // 透视缩放
+                val ndotv: Float,   // 0..1 球面朝向相机程度
                 val id: Int
             )
 
@@ -219,7 +221,7 @@ fun GuidanceSphere(
 
             for (p in points) {
                 // 背面剔除: dot(point, device_Z_in_world) > 0 → 面向相机
-                val facing = p.x * r2 + p.y * r5 + p.z * r8
+                val facing = (p.x * r2 + p.y * r5 + p.z * r8) / Config.SPHERE_RADIUS
                 if (facing <= 0f) continue
 
                 // 世界坐标 → 相机相对坐标
@@ -240,7 +242,7 @@ fun GuidanceSphere(
                 val sx = cx + vx * perspScale
                 val sy = cy - vy * perspScale   // 翻转Y：世界上=屏幕上
 
-                visible.add(VisiblePoint(sx, sy, vz, perspScale, p.id))
+                visible.add(VisiblePoint(sx, sy, vz, perspScale, facing.coerceIn(0f, 1f), p.id))
             }
 
             // 从远到近排序（先画远处的）
@@ -248,16 +250,32 @@ fun GuidanceSphere(
 
             // 画球体背景圆
             val bgRadius = Config.SPHERE_RADIUS * Config.FOCAL_LENGTH / Config.CAMERA_DISTANCE
+            val sphereCenter = Offset(cx, cy)
+            val lightCenter = Offset(cx - bgRadius * 0.35f, cy - bgRadius * 0.35f)
             drawCircle(
-                color = Color(100, 100, 100, 200),
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF6A6A6A).copy(alpha = 0.92f),
+                        Color(0xFF1A1A1A).copy(alpha = 0.98f)
+                    ),
+                    center = lightCenter,
+                    radius = bgRadius * 1.35f
+                ),
                 radius = bgRadius,
-                center = Offset(cx, cy)
+                center = sphereCenter
+            )
+            drawCircle(
+                color = Color.White.copy(alpha = 0.06f),
+                radius = bgRadius,
+                center = sphereCenter
             )
 
             // 画所有可见点
             for (vp in visible) {
                 val litTime = litTimestamps[vp.id]
-                val baseDotR = Config.BASE_DOT_RADIUS * vp.scale
+                val depthScale = vp.scale.coerceIn(0.65f, 2.25f)
+                val paintedScale = sqrt(vp.ndotv.coerceIn(0.05f, 1f))
+                val baseDotR = Config.BASE_DOT_RADIUS * depthScale * paintedScale
 
                 if (litTime != null) {
                     // 已点亮 → 动画
@@ -266,22 +284,26 @@ fun GuidanceSphere(
                     // ease-out cubic
                     val eased = 1f - (1f - t) * (1f - t) * (1f - t)
 
-                    // 尺寸: 1x → 4x
+                    // 尺寸：弱化“泡泡 3D 感”，但保留近大远小（透视已处理）
                     val dotRadius = baseDotR * (1f + (Config.LIT_SCALE - 1f) * eased)
-                    // 颜色: 灰 → 白
-                    val gray = 0.7f
-                    val colorVal = gray + (1f - gray) * eased
-                    val alpha = 0.5f + 0.5f * eased
+                    val alphaBase = (0.10f + 0.28f * vp.ndotv)
+                    val alpha = (alphaBase + 0.48f * eased).coerceIn(0f, 1f)
 
                     drawCircle(
-                        color = Color(colorVal, colorVal, colorVal, alpha),
+                        color = Color.Black.copy(alpha = alpha * 0.28f),
+                        radius = dotRadius * 1.28f,
+                        center = Offset(vp.screenX, vp.screenY)
+                    )
+                    drawCircle(
+                        color = Color.White.copy(alpha = alpha),
                         radius = dotRadius,
                         center = Offset(vp.screenX, vp.screenY)
                     )
                 } else {
-                    // 未点亮 → 灰色小点
+                    // 未点亮：更轻、更像“画在球上”
+                    val alpha = (0.06f + 0.18f * vp.ndotv).coerceIn(0f, 0.25f)
                     drawCircle(
-                        color = Color(0.7f, 0.7f, 0.7f, 0.5f),
+                        color = Color.White.copy(alpha = alpha),
                         radius = baseDotR,
                         center = Offset(vp.screenX, vp.screenY)
                     )
