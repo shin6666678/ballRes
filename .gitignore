@@ -1,0 +1,54 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+/.gradle-user-home
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# ======= VicMusic 自定义忽略规则 =======
+
+# 忽略所有构建目录
+build/
+app/build/
+release/
+
+# 忽略所有的日志文件
+*.log
+
+# 忽略 Kotlin 和 Gradle 的编译缓存
+.kotlin/
+.gradle/
+.idea/
+
+# 忽略极其重要的签名文件 (绝对不能上传)
+*.jks
+*.keystore
+vic-music-keystore
+/vic-music-keystore
+
+# 忽略本地网络配置文件 (防止服务器 IP 泄露)
+app/src/main/java/com/shin/vicmusic/core/config/Config.kt
+
+# 忽略 VS Code 的工作空间和配置
+.vscode/
+*.code-workspace
+
+# 忽略 Windows 系统产生的缩略图缓存
+Thumbs.db
+ehthumbs.db
+
+# 忽略 Mac 系统产生的属性文件
+.DS_Store
+
+# 忽略 Android Studio 自动生成的捕获文件
+*.hprof
