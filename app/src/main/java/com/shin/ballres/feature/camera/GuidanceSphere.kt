@@ -1,4 +1,4 @@
-package com.shin.ballres.ui
+package com.shin.ballres.feature.camera
 
 import android.content.Context
 import android.hardware.Sensor
@@ -16,24 +16,23 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.isActive
-import kotlin.math.acos
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 /**
  * 球面上的一个点（世界坐标系：X=东, Y=北, Z=上/反重力）
@@ -112,7 +111,7 @@ fun GuidanceSphere(
     }
     // 已点亮的点 -> 首次点亮时间戳 (elapsedRealtime ms)
     val litTimestamps: SnapshotStateMap<Int, Long> = remember(key) {
-        androidx.compose.runtime.mutableStateMapOf()
+        mutableStateMapOf()
     }
 
     // 持续帧驱动，确保动画流畅
