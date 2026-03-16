@@ -21,11 +21,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.graphics.drawscope.clipPath
 import kotlinx.coroutines.isActive
 import kotlin.math.acos
 import kotlin.math.cos
@@ -48,11 +51,12 @@ object Config {
     const val SPHERE_RADIUS = 60f
     const val CAMERA_DISTANCE = SPHERE_RADIUS * 4f
     const val FOCAL_LENGTH = 400f
+    const val RENDER_SCALE = 1.25f          // 纯渲染缩放：让球体/点更大，不影响逻辑计算
     const val LON_STEP = 12f
     const val LAT_STEP = 12f
     const val HIGHLIGHT_DEGREE = 30f        // ±30° 点亮范围
-    const val BASE_DOT_RADIUS = 0.8f        // 未点亮时的点半径
-    const val LIT_SCALE = 1.35f             // 点亮后放大倍数
+    const val BASE_DOT_RADIUS = 1.05f       // 未点亮时的点半径（整体更大）
+    const val LIT_SCALE = 1.15f             // 点亮后放大倍数（减弱“泡泡感”）
     const val ANIM_DURATION_MS = 300L       // 点亮动画时长
 }
 
@@ -238,7 +242,7 @@ fun GuidanceSphere(
                 // vz < 0 表示在相机前方
                 if (vz >= -1f) continue
 
-                val perspScale = Config.FOCAL_LENGTH / (-vz)
+                val perspScale = (Config.FOCAL_LENGTH / (-vz)) * Config.RENDER_SCALE
                 val sx = cx + vx * perspScale
                 val sy = cy - vy * perspScale   // 翻转Y：世界上=屏幕上
 
@@ -249,7 +253,8 @@ fun GuidanceSphere(
             visible.sortBy { it.viewZ }
 
             // 画球体背景圆
-            val bgRadius = Config.SPHERE_RADIUS * Config.FOCAL_LENGTH / Config.CAMERA_DISTANCE
+            val bgRadius =
+                (Config.SPHERE_RADIUS * Config.FOCAL_LENGTH / Config.CAMERA_DISTANCE) * Config.RENDER_SCALE
             val sphereCenter = Offset(cx, cy)
             val lightCenter = Offset(cx - bgRadius * 0.35f, cy - bgRadius * 0.35f)
             drawCircle(
@@ -270,43 +275,48 @@ fun GuidanceSphere(
                 center = sphereCenter
             )
 
-            // 画所有可见点
-            for (vp in visible) {
-                val litTime = litTimestamps[vp.id]
-                val depthScale = vp.scale.coerceIn(0.65f, 2.25f)
-                val paintedScale = sqrt(vp.ndotv.coerceIn(0.05f, 1f))
-                val baseDotR = Config.BASE_DOT_RADIUS * depthScale * paintedScale
+            // 让点“直接画在球上”：把点裁剪在球体轮廓内，避免边缘产生悬浮感
+            val sphereRect = Rect(
+                left = sphereCenter.x - bgRadius,
+                top = sphereCenter.y - bgRadius,
+                right = sphereCenter.x + bgRadius,
+                bottom = sphereCenter.y + bgRadius
+            )
+            val sphereClip = Path().apply { addOval(sphereRect) }
 
-                if (litTime != null) {
-                    // 已点亮 → 动画
-                    val elapsed = nowMs - litTime
-                    val t = (elapsed.toFloat() / Config.ANIM_DURATION_MS).coerceIn(0f, 1f)
-                    // ease-out cubic
-                    val eased = 1f - (1f - t) * (1f - t) * (1f - t)
+            clipPath(sphereClip) {
+                for (vp in visible) {
+                    val litTime = litTimestamps[vp.id]
+                    val depthScale = vp.scale.coerceIn(0.55f, 2.6f)
+                    val nd = vp.ndotv.coerceIn(0f, 1f)
 
-                    // 尺寸：弱化“泡泡 3D 感”，但保留近大远小（透视已处理）
-                    val dotRadius = baseDotR * (1f + (Config.LIT_SCALE - 1f) * eased)
-                    val alphaBase = (0.10f + 0.28f * vp.ndotv)
-                    val alpha = (alphaBase + 0.48f * eased).coerceIn(0f, 1f)
+                    val paintedScale = 0.25f + 0.75f * nd * nd
+                    val baseDotR = Config.BASE_DOT_RADIUS * depthScale * paintedScale
 
-                    drawCircle(
-                        color = Color.Black.copy(alpha = alpha * 0.28f),
-                        radius = dotRadius * 1.28f,
-                        center = Offset(vp.screenX, vp.screenY)
-                    )
-                    drawCircle(
-                        color = Color.White.copy(alpha = alpha),
-                        radius = dotRadius,
-                        center = Offset(vp.screenX, vp.screenY)
-                    )
-                } else {
-                    // 未点亮：更轻、更像“画在球上”
-                    val alpha = (0.06f + 0.18f * vp.ndotv).coerceIn(0f, 0.25f)
-                    drawCircle(
-                        color = Color.White.copy(alpha = alpha),
-                        radius = baseDotR,
-                        center = Offset(vp.screenX, vp.screenY)
-                    )
+                    val shade = 0.55f + 0.45f * nd
+                    val dotVal = (0.78f + 0.22f * shade).coerceIn(0f, 1f)
+
+                    if (litTime != null) {
+                        val elapsed = nowMs - litTime
+                        val t = (elapsed.toFloat() / Config.ANIM_DURATION_MS).coerceIn(0f, 1f)
+                        val eased = 1f - (1f - t) * (1f - t) * (1f - t)
+
+                        val dotRadius = baseDotR * (1f + (Config.LIT_SCALE - 1f) * eased)
+                        val alpha = (0.10f + 0.35f * eased).coerceIn(0f, 0.55f)
+
+                        drawCircle(
+                            color = Color(dotVal, dotVal, dotVal, alpha),
+                            radius = dotRadius,
+                            center = Offset(vp.screenX, vp.screenY)
+                        )
+                    } else {
+                        val alpha = (0.06f + 0.10f * nd).coerceIn(0f, 0.18f)
+                        drawCircle(
+                            color = Color(dotVal, dotVal, dotVal, alpha),
+                            radius = baseDotR,
+                            center = Offset(vp.screenX, vp.screenY)
+                        )
+                    }
                 }
             }
         }
