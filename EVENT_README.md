@@ -85,3 +85,7 @@ adb logcat | grep -E "\[Event\]|\[Network\]"
 
 ### 5. 更多发送器
 - **改进**: 实现 FileSender（本地日志）、FirebaseSender 等
+
+## 四、AI
+- **Claude**: 使用Claude opus进行绘图
+- **opencode(minimax2.7)**: 构建项目架构
