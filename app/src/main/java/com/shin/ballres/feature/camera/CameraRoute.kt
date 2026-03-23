@@ -21,8 +21,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,21 +31,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.shin.ballres.event.EventManager
 import com.shin.ballres.ui.LocalNavController
 
 
 @Composable
 fun CameraRoute() {
     val navController = LocalNavController.current
-    var sphereKey by remember { mutableStateOf(0) }
-    CameraScreen(sphereKey = sphereKey, onBackClick = navController::popBackStack)
+    CameraScreen( onBackClick = {
+        EventManager.trackEvent("camera_closed")
+        navController.popBackStack()
+    })
 }
 
 @Composable
 fun CameraScreen(
-    sphereKey: Int,
     onBackClick: () -> Unit
 ) {
+    var highlightCount by remember { mutableIntStateOf(0) }
+    var lastHighlightCount by remember { mutableIntStateOf(0) }
+    
+    LaunchedEffect(Unit) {
+        EventManager.trackEvent("camera_opened")
+    }
+    
+    LaunchedEffect(highlightCount) {
+        if (highlightCount >= 10 && lastHighlightCount < 10) {
+            EventManager.trackEvent("highlight_threshold_reached", mapOf("count" to highlightCount))
+        }
+        lastHighlightCount = highlightCount
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -53,7 +70,6 @@ fun CameraScreen(
 
         CameraPreviewView(modifier = Modifier.fillMaxSize())
 
-        // 顶部关闭按钮
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,7 +95,6 @@ fun CameraScreen(
             }
         }
 
-        // 底部引导面板
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -106,12 +121,14 @@ fun CameraScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp), // 留出一点内边距给球体
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     GuidanceSphere(
                         modifier = Modifier.fillMaxSize(),
-                        key = sphereKey
+                        onHighlightCountChanged = { count ->
+                            highlightCount = count
+                        }
                     )
                 }
             }

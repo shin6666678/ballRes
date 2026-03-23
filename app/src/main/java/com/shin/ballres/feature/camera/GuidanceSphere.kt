@@ -15,12 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -92,7 +92,7 @@ fun generateSpherePoints(): List<SpherePoint> {
 @Composable
 fun GuidanceSphere(
     modifier: Modifier = Modifier,
-    key: Int = 0
+    onHighlightCountChanged: ((Int) -> Unit)
 ) {
     val context = LocalContext.current
     val sensorManager = remember {
@@ -110,20 +110,20 @@ fun GuidanceSphere(
         mutableStateOf(listOf(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f))
     }
     // 已点亮的点 -> 首次点亮时间戳 (elapsedRealtime ms)
-    val litTimestamps: SnapshotStateMap<Int, Long> = remember(key) {
-        mutableStateMapOf()
-    }
-
+    val litTimestamps = remember { mutableStateMapOf<Int, Long>() }
+    
+    var lastLitCount by remember { mutableIntStateOf(0) }
+    
     // 持续帧驱动，确保动画流畅
     var frameNanos by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(key) {
+    LaunchedEffect(Unit) {
         while (isActive) {
             withFrameNanos { nanos -> frameNanos = nanos }
         }
     }
 
     // ---- 传感器 ----
-    DisposableEffect(sensorManager, rotationSensor, key) {
+    DisposableEffect(sensorManager, rotationSensor) {
         val rawR = FloatArray(9)
         val remappedR = FloatArray(9)
 
@@ -175,6 +175,12 @@ fun GuidanceSphere(
                     if (dot > highlightCos && p.id !in litTimestamps) {
                         litTimestamps[p.id] = now
                     }
+                }
+                
+                val currentLitCount = litTimestamps.size
+                if (currentLitCount != lastLitCount) {
+                    lastLitCount = currentLitCount
+                    onHighlightCountChanged(currentLitCount)
                 }
             }
 
